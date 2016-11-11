@@ -1,0 +1,8 @@
+.DS_Store
+sudoku
+*.o
+*.obj
+*.a
+*.out
+*.exe
+*.app
