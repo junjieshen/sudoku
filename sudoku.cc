@@ -1,55 +1,57 @@
-#include <iostream>
-#include <cmath>
-#include <cassert>
-
-#define H_BAR "------+-------+------"
-#define V_BAR "|"
-
-typedef int RC;
+#include "sudoku.h"
 
 using namespace std;
 
-inline int getOrder(int row, int col)
+Cell::Cell(char digit)
 {
-    return row*9+col;
+    if (digit == '.' || digit == '0')
+    {
+        value = '.';
+        for (char c = '1'; c <= '9'; c++)
+        {
+            domain.push_back(c);
+        }
+    }
+    else
+    {
+        value = digit;
+        domain.push_back(digit);
+    }
 }
 
-RC printBoard(string &board) 
+ConflictGroup::ConflictGroup()
 {
-    if (board.size() != 81) return -1;
-    cout << endl;
+}
+
+Board::Board(string boardString)
+{
+    assert(boardString.size() == 81);
+    for (int i = 0; i < boardString.size(); i++)
+    {
+        cells.push_back(new Cell(boardString[i]));
+    }
+}
+
+Board::~Board()
+{
+    for (auto &i : cells)
+    {
+        delete i;
+    }
+    cells.clear();
+}
+
+void Board::printBoard()
+{
     for (int i = 0; i < 9; i++) {
         if (i!=0 && i%3 == 0)
-            cout << H_BAR << endl;
+            cout << "------+------+------" << endl;
         for (int j = 0; j < 9; j++) {
             if (j!=0 && j%3 == 0) {
-                cout << V_BAR << ' ';
+                cout << "| ";
             }
-            if (board[getOrder(i,j)] == '0') {
-                cout << '.';
-            } else {
-                cout << board[getOrder(i,j)];
-            }
-            cout << ' ';
+            cout << *cells[i*9 + j] << ' ';
         }
         cout << endl;
     }
-    cout << endl;
-    return 0;
-}
-
-int main(int argc, char* argv[]) 
-{
-    if (argc != 2) {
-        cout << "Please provide board parameter!" << endl;
-        return -1;
-    }
-
-    string board(argv[1]);
-    if (printBoard(board) != 0) {
-        cout << "Incompatible board! Please check..." << endl;
-        return -1;
-    }
-
-    return 0;
 }
