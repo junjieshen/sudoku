@@ -30,9 +30,6 @@ if [ "$line" == "" ]; then
     exit 1
 fi
 
-make clean >/dev/null
-make >/dev/null
-
 START=$(date +%s.%N)
 
 ./sudoku $line

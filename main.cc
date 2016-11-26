@@ -8,15 +8,21 @@ string hard1(".....6....59.....82....8....45........3........6..3.54...325..6...
 
 int main(int argc, char* argv[])
 {
-//    if (argc != 2) {
-//        cout << "Sample output:" << endl;
-//        printBoard(grid1);
-//        cout << "Please provide board parameter!" << endl;
-//        return -1;
-//    }
+    string boardString;
+    if (argc == 2)
+    {
+        boardString = argv[1];
+    }
+    else
+    {
+        boardString = grid2;
+    }
 
-    Board board(grid1);
-    board.printBoard();
+    Board board(boardString);
+    if (board.solve() != true)
+    {
+        cout << "Failed to solve the board!" << endl;
+    }
 
     return 0;
 }
