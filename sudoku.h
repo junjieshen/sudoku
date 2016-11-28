@@ -55,6 +55,15 @@ public:
     virtual bool constraintPropagation();
     virtual bool solve();
 
+    virtual void printBoardString()
+    {
+        for (auto &c : cells)
+        {
+            cout << c->domain[0];
+        }
+        cout << endl;
+    }
+
     virtual void printBoard()
     {
         cout << endl;
