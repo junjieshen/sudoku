@@ -261,6 +261,8 @@ bool Board::eliminateCell(const int idx)
 
 bool Board::eliminateConflictGroup(const vector<int>& cg)
 {
+    // explored list for naked twin strategy
+    vector<int> twinExplored;
     for (auto &c : cg)
     {
         if (cells[c]->isAssigned())
@@ -297,7 +299,7 @@ bool Board::eliminateConflictGroup(const vector<int>& cg)
         }
 
         // Naked Twins strategy
-        if (cells[c]->domain.size() == 2)
+        if (cells[c]->domain.size() == 2 && find(twinExplored.begin(), twinExplored.end(), c) == twinExplored.end())
         {
             for (auto &twin : cg)
             {
@@ -312,7 +314,9 @@ bool Board::eliminateConflictGroup(const vector<int>& cg)
                         return false;
                     }
 
-                    continue;
+                    twinExplored.push_back(c);
+                    twinExplored.push_back(twin);
+                    break;
                 }
 
             }
