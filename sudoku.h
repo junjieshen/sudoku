@@ -19,7 +19,8 @@ public:
     };
 
     virtual void copyFrom(const Cell& cell);
-    virtual void assign(char c);
+    virtual void findAndDelete(const char val);
+    virtual void assign(const char c);
     virtual bool isAssigned()
     {
         return (domain.size() == 1);
@@ -48,8 +49,9 @@ public:
     virtual void copyResultFrom(const Board& board);
     virtual bool isSolved();
     virtual int getMostConstrainedCellIndex();
-    virtual bool eliminateCell(int idx);
-    virtual bool eliminateConflictGroup(vector<int>& cg);
+    virtual bool eliminateTwins(const vector<int>& cg, const int idx1, const int idx2);
+    virtual bool eliminateCell(const int idx);
+    virtual bool eliminateConflictGroup(const vector<int>& cg);
     virtual bool constraintPropagation();
     virtual bool solve();
 

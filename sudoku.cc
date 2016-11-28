@@ -32,7 +32,21 @@ void Cell::copyFrom(const Cell& cell)
     this->domain = cell.domain;
 }
 
-void Cell::assign(char c)
+void Cell::findAndDelete(const char val)
+{
+    vector<char>::iterator it = find(domain.begin(), domain.end(), val);
+    if (it != domain.end())
+    {
+        domain.erase(it);
+        if (domain.size() == 1)
+        {
+            assign(domain[0]);
+        }
+    }
+
+}
+
+void Cell::assign(const char c)
 {
     domain.clear();
     domain.push_back(c);
@@ -183,7 +197,35 @@ int Board::getMostConstrainedCellIndex()
     return idx;
 }
 
-bool Board::eliminateCell(int idx)
+bool Board::eliminateTwins(const vector<int>& cg, const int idx1, const int idx2)
+{
+    for (auto &c : cg)
+    {
+        if (c == idx1 || c == idx2)
+        {
+            continue;
+        }
+
+        cells[c]->findAndDelete(cells[idx1]->domain[1]);
+        cells[c]->findAndDelete(cells[idx1]->domain[0]);
+        if (cells[c]->isAssigned())
+        {
+            if (!eliminateCell(c))
+            {
+                return false;
+            }
+        }
+
+        if (cells[c]->domain.size() == 0)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Board::eliminateCell(const int idx)
 {
     // Only eliminate cells that are assigned a value
     if (cells[idx]->isAssigned()) {
@@ -217,7 +259,7 @@ bool Board::eliminateCell(int idx)
     return true;
 }
 
-bool Board::eliminateConflictGroup(vector<int>& cg)
+bool Board::eliminateConflictGroup(const vector<int>& cg)
 {
     for (auto &c : cg)
     {
@@ -254,6 +296,28 @@ bool Board::eliminateConflictGroup(vector<int>& cg)
             eliminateCell(c);
         }
 
+        // Naked Twins strategy
+        if (cells[c]->domain.size() == 2)
+        {
+            for (auto &twin : cg)
+            {
+                // Since domain is sorted, we can simply check one by one
+                if (twin != c && cells[twin]->domain.size() == 2 &&
+                        cells[c]->domain[0] == cells[twin]->domain[0] &&
+                        cells[c]->domain[1] == cells[twin]->domain[1])
+                {
+                    // prune these two value from other domains in the cg
+                    if (!eliminateTwins(cg, c, twin))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+            }
+
+        }
     }
 
     return true;

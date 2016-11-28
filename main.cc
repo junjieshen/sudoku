@@ -19,8 +19,8 @@ int main(int argc, char* argv[])
     }
 
     Board board(boardString);
-    //cout << "Original board: " << endl;
-    //board.printBoard();
+    cout << "Original board: " << endl;
+    board.printBoard();
 
     if (board.solve() != true)
     {
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     }
 
     cout << "Solved! The complete board is: " << endl;
-    //board.printBoard();
+    board.printBoard();
 
     return 0;
 }
