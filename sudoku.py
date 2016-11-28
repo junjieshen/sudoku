@@ -190,8 +190,9 @@ hard1  = '.....6....59.....82....8....45........3........6..3.54...325..6.......
 if __name__ == '__main__':
     test()
     #solve_all(from_file("easy50.txt", '========'), "easy", None)
+    solve_all([grid2], "====", 0)
     #solve_all(from_file("top95.txt"), "hard", None)
-    solve_all([random_puzzle() for _ in range(2)], "random", 0.0)
+    #solve_all([random_puzzle() for _ in range(2)], "random", 0.0)
 
 ## References used:
 ## http://www.scanraid.com/BasicStrategies.htm

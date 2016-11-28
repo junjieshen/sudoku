@@ -2,98 +2,58 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <cmath>
 #include <cassert>
 
-#define EMPTY '.'
-
 using namespace std;
-
-class ConflictGroup;
 
 class Cell
 {
 public:
     string name;
-    char value;
     vector<char> domain;
-    vector<Cell *> peers;
 
     Cell(int pos, char digit);
+    Cell(const Cell& cell);
     ~Cell()
     {
     };
 
-    void extractPeersFromConflictGroup(ConflictGroup* cg);
-    bool eliminate();
-
-    void printPeers()
+    virtual void copyFrom(const Cell& cell);
+    virtual void assign(char c);
+    virtual bool isAssigned()
     {
-        cout << name << ": ";
-        for (auto &i : peers)
-        {
-            cout << i->name << " ";
-        }
-        cout << endl;
-    }
-
-    void printDomain()
-    {
-        for (auto &i : domain)
-        {
-            cout << i << " ";
-        }
-        cout << endl;
-    }
-
-};
-
-class ConflictGroup
-{
-public:
-    vector<Cell *> cells;
-
-    ConflictGroup()
-    {
+        return (domain.size() == 1);
     };
-
-    ~ConflictGroup()
-    {
-    };
-
-    bool eliminate();
-    bool isSatisfied();
-    bool hasCell(Cell* cell)
-    {
-        if (find(cells.begin(), cells.end(), cell) != cells.end())
-        {
-            return true;
-        }
-        return false;
-    }
-
-    void printConflictGroup()
-    {
-        for (auto &i : cells)
-        {
-            cout << i->name << " ";
-        }
-        cout << endl;
-    }
+    virtual char getLeastConstrainedValue();
 };
 
 class Board
 {
+private:
+    vector<Cell *> cells;
+
+    // Each group stores a bunch of cell indices
+    static vector<vector<int> > conflictGroups;
+    // Indices of peers for each cell
+    static vector<vector<int> > cellPeers;
+
 public:
     Board(const string& boardString);
+    Board(const Board& board);
     ~Board();
 
-    void initializeCells(const string& boardString);
-    void initializeConflictGroups();
-    bool constraintPropagation();
-    bool solve();
+    virtual void initializeCells(const string& boardString);
+    virtual void initializeConflictGroups();
+    virtual void initializeCellPeers();
+    virtual void copyResultFrom(const Board& board);
+    virtual bool isSolved();
+    virtual int getMostConstrainedCellIndex();
+    virtual bool eliminateCell(int idx);
+    virtual bool eliminateConflictGroup(vector<int>& cg);
+    virtual bool constraintPropagation();
+    virtual bool solve();
 
-    void printBoard()
+    virtual void printBoard()
     {
         cout << endl;
         cout << "    1 2 3   4 5 6   7 8 9 " << endl;
@@ -106,15 +66,54 @@ public:
                 if (j!=0 && j%3 == 0) {
                     cout << "| ";
                 }
-                cout << cells[i*9 + j]->value << ' ';
+                if (cells[i*9 + j]->isAssigned()) {
+                    cout << cells[i*9 + j]->domain[0] << ' ';
+                } else {
+                    cout << ". ";
+                }
             }
             cout << "|" << endl;
         }
         cout << "  +-------+-------+-------+" << endl << endl;
     };
 
-private:
-    vector<Cell *> cells;
-    vector<ConflictGroup *> conflictGroups;
+    virtual void printConflictGroups()
+    {
+        for (auto &cg : conflictGroups)
+        {
+            for (int i = 0; i < 9; i++)
+            {
+                cout << cg[i] << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    void printDomains()
+    {
+        cout << endl;
+        cout << "     1          2          3           4          5          6           7          8          9" << endl;
+        for (int i = 0; i < 9; i++) {
+            if (i%3 == 0)
+            cout << "  +----------------------------------+---------------------------------+---------------------------------+" << endl;
+            cout << string(1, 'A' + i) << " | ";
+            for (int j = 0; j < 9; j++) {
+                if (j!=0 && j%3 == 0) {
+                    cout << "|";
+                }
+                cout << " ";
+                vector<char> dm = cells[i*9 +j]->domain;
+                for (auto &c : dm) {
+                    cout << c;
+                }
+
+                for (int s = dm.size(); s <= 9; s++) {
+                    cout << " ";
+                }
+            }
+            cout << "|" << endl;
+        }
+        cout << "  +----------------------------------+---------------------------------+---------------------------------+" << endl;
+    }
 };
 

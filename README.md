@@ -20,3 +20,9 @@ $ ./sudoku 003020600900305001001806400008102900700000008006708200002609500800203
 ```sh
 $ ./test_sudoku.sh easy 5
 ```
+
+### Run all board configurations from files:
+
+```sh
+$ ./test_sudoku_all.sh easy
+```

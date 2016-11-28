@@ -6,3 +6,5 @@ sudoku
 *.out
 *.exe
 *.app
+
+*timing

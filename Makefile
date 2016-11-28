@@ -1,5 +1,5 @@
 CXX      = g++
-CXXFLAGS = -g -std=c++11
+CXXFLAGS = -O3 -std=c++11
 DEPS     = sudoku.h
 OBJS     = main.o sudoku.o
 

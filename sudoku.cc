@@ -2,12 +2,14 @@
 
 using namespace std;
 
+vector<vector<int> > Board::conflictGroups;
+vector<vector<int> > Board::cellPeers;
+
 Cell::Cell(int pos, char digit)
 {
     name = string(1, 'A' + pos/9) + to_string(1 + pos%9);
     if (digit == '.' || digit == '0')
     {
-        value = EMPTY;
         for (char c = '1'; c <= '9'; c++)
         {
             domain.push_back(c);
@@ -15,107 +17,31 @@ Cell::Cell(int pos, char digit)
     }
     else
     {
-        value = digit;
         domain.push_back(digit);
     }
 }
 
-void Cell::extractPeersFromConflictGroup(ConflictGroup* cg)
+Cell::Cell(const Cell& cell)
 {
-    if (!cg->hasCell(this))
-    {
-        return;
-    }
-
-    for (auto &c : cg->cells)
-    {
-        if (c != this && find(peers.begin(), peers.end(), c) == peers.end())
-        {
-            peers.push_back(c);
-        }
-    }
+    this->copyFrom(cell);
 }
 
-bool Cell::eliminate()
+void Cell::copyFrom(const Cell& cell)
 {
-    if (value != EMPTY) {
-        for (auto &peer : peers)
-        {
-            vector<char>::iterator it = find(peer->domain.begin(), peer->domain.end(), value);
-            if (it != peer->domain.end())
-            {
-                peer->domain.erase(it);
-
-                // If peer have only one element,
-                // assign value and eliminate peer's peers.
-                if (peer->domain.size() == 1)
-                {
-                    peer->value = peer->domain[0];
-                    if (!peer->eliminate())
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            if (peer->domain.size() == 0)
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
+    this->name = cell.name;
+    this->domain = cell.domain;
 }
 
-bool ConflictGroup::eliminate()
+void Cell::assign(char c)
 {
-    for (auto &cell : cells)
-    {
-        if (cell->value != EMPTY)
-        {
-            continue;
-        }
-
-        for (auto &c : cell->domain) {
-            bool assigned = false;
-            for (auto &peer_cell : cells) {
-                if (peer_cell == cell) {
-                    continue;
-                }
-
-                if (find(peer_cell->domain.begin(), peer_cell->domain.end(), c) != peer_cell->domain.end())
-                {
-                    assigned = true;
-                    break;
-                }
-            }
-            if (!assigned)
-            {
-                cell->value = c;
-                cell->domain.clear();
-                cell->domain.push_back(c);
-                break;
-            }
-        }
-
-        if (cell->value != EMPTY)
-        {
-            cell->eliminate();
-        }
-
-    }
-    return true;
+    domain.clear();
+    domain.push_back(c);
 }
 
-bool ConflictGroup::isSatisfied()
+char Cell::getLeastConstrainedValue()
 {
-    for (auto &i : cells)
-    {
-        if (i->domain.size() != 1)
-            return false;
-    }
-    return true;
+    assert(domain.size() > 1);
+    return domain[0];
 }
 
 Board::Board(const string& boardString)
@@ -124,11 +50,14 @@ Board::Board(const string& boardString)
 
     initializeCells(boardString);
     initializeConflictGroups();
+    initializeCellPeers();
+}
 
-    for (auto &cell : cells) {
-        for (auto &cg : conflictGroups) {
-            cell->extractPeersFromConflictGroup(cg);
-        }
+Board::Board(const Board& board)
+{
+    for (auto &cell : board.cells)
+    {
+        this->cells.push_back(new Cell(*cell));
     }
 }
 
@@ -139,12 +68,6 @@ Board::~Board()
         delete i;
     }
     cells.clear();
-
-    for (auto &i : conflictGroups)
-    {
-        delete i;
-    }
-    conflictGroups.clear();
 }
 
 void Board::initializeCells(const string& boardString)
@@ -157,28 +80,31 @@ void Board::initializeCells(const string& boardString)
 
 void Board::initializeConflictGroups()
 {
+    // Rows
     for (int row = 0; row < 9; row++) {
-        ConflictGroup *cg = new ConflictGroup();
+        vector<int> cg;
         for (int col = 0; col < 9; col++) {
-            cg->cells.push_back(cells[row*9 + col]);
+            cg.push_back(row*9 + col);
         }
         conflictGroups.push_back(cg);
     }
 
+    // Columns
     for (int col = 0; col < 9; col++) {
-        ConflictGroup *cg = new ConflictGroup();
+        vector<int> cg;
         for (int row = 0; row < 9; row++) {
-            cg->cells.push_back(cells[row*9 + col]);
+            cg.push_back(row*9 + col);
         }
         conflictGroups.push_back(cg);
     }
 
+    // Blocks
     for (int row = 0; row < 9; row += 3) {
         for (int col = 0; col < 9; col += 3) {
-            ConflictGroup *cg = new ConflictGroup();
+            vector<int> cg;
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    cg->cells.push_back(cells[(row+i)*9 + (col+j)]);
+                    cg.push_back((row+i)*9 + (col+j));
                 }
             }
             conflictGroups.push_back(cg);
@@ -186,62 +112,212 @@ void Board::initializeConflictGroups()
     }
 }
 
+void Board::initializeCellPeers()
+{
+    for (int i = 0; i < cells.size(); i++) {
+        vector<int> peers;
+        for (auto &cg : conflictGroups) {
+            // Skip if cell is not in the conflict group
+            if (find(cg.begin(), cg.end(), i) == cg.end())
+            {
+                continue;
+            }
+
+            peers.insert(peers.end(), cg.begin(), cg.end());
+        }
+
+        // Remove duplicates
+        sort(peers.begin(), peers.end());
+        peers.erase(unique(peers.begin(), peers.end()), peers.end());
+
+        // Remove self
+        for (vector<int>::iterator iter = peers.begin(); iter != peers.end(); iter++) {
+            if (*iter == i) {
+                peers.erase(iter);
+                break;
+            }
+        }
+
+        assert(peers.size() == 20);
+        cellPeers.push_back(peers);
+    }
+}
+
+void Board::copyResultFrom(const Board& board)
+{
+    for (int i = 0; i < cells.size(); i++)
+    {
+        cells[i]->copyFrom(*board.cells[i]);
+    }
+
+}
+
+bool Board::isSolved()
+{
+    for (auto &c : cells)
+    {
+        if (c->domain.size() != 1)
+            return false;
+    }
+    return true;
+}
+
+int Board::getMostConstrainedCellIndex()
+{
+    int idx = -1;
+    int domainSize = 9;
+    for (int i = 0; i < cells.size(); i++)
+    {
+        if (cells[i]->isAssigned())
+        {
+            continue;
+        }
+
+        if (cells[i]->domain.size() < domainSize)
+        {
+            idx = i;
+            domainSize = cells[i]->domain.size();
+        }
+    }
+
+    return idx;
+}
+
+bool Board::eliminateCell(int idx)
+{
+    // Only eliminate cells that are assigned a value
+    if (cells[idx]->isAssigned()) {
+        for (auto &p : cellPeers[idx])
+        {
+            vector<char>::iterator it = find(cells[p]->domain.begin(), cells[p]->domain.end(),
+                    cells[idx]->domain[0]);
+            if (it != cells[p]->domain.end())
+            {
+                cells[p]->domain.erase(it);
+
+                // If peer have only one element,
+                // assign value and eliminate peer's peers.
+                if (cells[p]->domain.size() == 1)
+                {
+                    cells[p]->assign(cells[p]->domain[0]);
+                    if (!eliminateCell(p))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (cells[p]->domain.size() == 0)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Board::eliminateConflictGroup(vector<int>& cg)
+{
+    for (auto &c : cg)
+    {
+        if (cells[c]->isAssigned())
+        {
+            continue;
+        }
+
+        // If value is not in any peer's domain, it must be the value of the current cell
+        for (auto &val : cells[c]->domain) {
+            bool assigned = false;
+            for (auto &p : cg) {
+                // Skip self
+                if (p == c) {
+                    continue;
+                }
+
+                if (find(cells[p]->domain.begin(), cells[p]->domain.end(), val) != cells[p]->domain.end())
+                {
+                    assigned = true;
+                    break;
+                }
+            }
+            if (!assigned)
+            {
+                cells[c]->assign(val);
+                break;
+            }
+        }
+
+        // If cell got assigned, prune again
+        if (cells[c]->isAssigned())
+        {
+            eliminateCell(c);
+        }
+
+    }
+
+    return true;
+}
+
+
 bool Board::constraintPropagation()
 {
-    cout << "Pruning cell domains..." << endl;
-//    cout << "Before: " << endl;
-//    for (auto &cell : cells)
-//    {
-//        cout << cell->name << ": ";
-//        cell->printDomain();
-//    }
-
-    for (auto &cell : cells)
+    //cout << "Pruning cell domains..." << endl;
+    for (int i = 0; i < cells.size(); i++)
     {
-        if (cell->eliminate() != true)
+        if (eliminateCell(i) != true)
         {
             return false;
         }
     }
 
-//    cout << "After: " << endl;
-//    for (auto &cell : cells)
-//    {
-//        cout << cell->name << ": ";
-//        cell->printDomain();
-//    }
-
-    printBoard();
-
-    cout << "Enforing constraints within conflict groups..." << endl;
-    for (auto &cg : conflictGroups)
+    //cout << "Enforcing constraints within conflict groups..." << endl;
+    for (int i = 0; i < conflictGroups.size(); i++)
     {
-        if (cg->eliminate() != true)
+        if (eliminateConflictGroup(conflictGroups[i]) != true)
         {
             return false;
         }
     }
 
-//    cout << "After: " << endl;
-//    for (auto &cell : cells)
-//    {
-//        cout << cell->name << ": ";
-//        cell->printDomain();
-//    }
-    printBoard();
-
+    //printDomains();
 
     return true;
 }
 
 bool Board::solve()
 {
-    cout << "Original board..." << endl;
-    printBoard();
     if (!constraintPropagation())
     {
         return false;
     }
 
-    return true;
+    if (isSolved())
+    {
+        return true;
+    }
+
+    int mccIdx = getMostConstrainedCellIndex();
+    if (mccIdx == -1)
+    {
+        return false;
+    }
+
+    for (auto &val : cells[mccIdx]->domain)
+    {
+        Board *newBoard = new Board(*this);
+        newBoard->cells[mccIdx]->assign(val);
+        //cout << "Assign cell: " << newBoard->cells[mccIdx]->name << " to value: " << val << endl;
+        if (newBoard->solve() == true)
+        {
+            this->copyResultFrom(*newBoard);
+            delete newBoard;
+            return true;
+        }
+
+        delete newBoard;
+    }
+
+    return false;
 }
+

@@ -15,14 +15,20 @@ int main(int argc, char* argv[])
     }
     else
     {
-        boardString = grid2;
+        boardString = hard1;
     }
 
     Board board(boardString);
+    //cout << "Original board: " << endl;
+    //board.printBoard();
+
     if (board.solve() != true)
     {
         cout << "Failed to solve the board!" << endl;
     }
+
+    cout << "Solved! The complete board is: " << endl;
+    //board.printBoard();
 
     return 0;
 }
