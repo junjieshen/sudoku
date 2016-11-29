@@ -32,6 +32,14 @@ int main(int argc, char* argv[])
 
     cout << "Solved! The complete board is: " << endl;
     board.printBoard();
+//    if (board.isSatisfied())
+//    {
+//        cout << "Satisfied!" << endl;
+//    }
+//    else
+//    {
+//        cout << "Unsatisfied!" << endl;
+//    }
 
     cout << "Final output string:" << endl;
     board.printBoardString();

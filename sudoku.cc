@@ -5,6 +5,13 @@ using namespace std;
 vector<vector<int> > Board::conflictGroups;
 vector<vector<int> > Board::cellPeers;
 
+//typedef std::mt19937 MyRNG;
+//uint32_t seed_val;
+//
+//MyRNG rng;
+//
+//std::uniform_int_distribution<uint32_t> uint_dist100(0,100);
+
 Cell::Cell(int pos, char digit)
 {
     name = string(1, 'A' + pos/9) + to_string(1 + pos%9);
@@ -36,6 +43,20 @@ void Cell::copyFrom(const Cell& cell)
     this->domain = cell.domain;
 }
 
+vector<char> Cell::getDomainList()
+{
+    vector<char> dl;
+    for (char i = 0; i < 9; i++)
+    {
+        if (domain.test(i))
+        {
+            dl.push_back(i);
+        }
+    }
+
+    return dl;
+}
+
 void Cell::findAndDelete(const char val)
 {
     domain.reset(val);
@@ -59,22 +80,12 @@ void Cell::assign(const char val)
     domain.set(val);
 }
 
-char Cell::getLeastConstrainedValue()
-{
-    assert(domain.count() > 1);
-    for (int i = 0; i < 9; i++)
-    {
-        if (domain.test(i))
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
 Board::Board(const string& boardString)
 {
     assert(boardString.size() == 81);
+
+    // Initialize random function with seed
+//    rng.seed(seed_val);
 
     initializeCells(boardString);
     initializeConflictGroups();
@@ -109,29 +120,37 @@ void Board::initializeCells(const string& boardString)
 void Board::initializeConflictGroups()
 {
     // Rows
-    for (int row = 0; row < 9; row++) {
+    for (int row = 0; row < 9; row++)
+    {
         vector<int> cg;
-        for (int col = 0; col < 9; col++) {
+        for (int col = 0; col < 9; col++)
+        {
             cg.push_back(row*9 + col);
         }
         conflictGroups.push_back(cg);
     }
 
     // Columns
-    for (int col = 0; col < 9; col++) {
+    for (int col = 0; col < 9; col++)
+    {
         vector<int> cg;
-        for (int row = 0; row < 9; row++) {
+        for (int row = 0; row < 9; row++)
+        {
             cg.push_back(row*9 + col);
         }
         conflictGroups.push_back(cg);
     }
 
     // Blocks
-    for (int row = 0; row < 9; row += 3) {
-        for (int col = 0; col < 9; col += 3) {
+    for (int row = 0; row < 9; row += 3)
+    {
+        for (int col = 0; col < 9; col += 3)
+        {
             vector<int> cg;
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
                     cg.push_back((row+i)*9 + (col+j));
                 }
             }
@@ -142,9 +161,11 @@ void Board::initializeConflictGroups()
 
 void Board::initializeCellPeers()
 {
-    for (int i = 0; i < cells.size(); i++) {
+    for (int i = 0; i < cells.size(); i++)
+    {
         vector<int> peers;
-        for (auto &cg : conflictGroups) {
+        for (auto &cg : conflictGroups)
+        {
             // Skip if cell is not in the conflict group
             if (find(cg.begin(), cg.end(), i) == cg.end())
             {
@@ -159,8 +180,10 @@ void Board::initializeCellPeers()
         peers.erase(unique(peers.begin(), peers.end()), peers.end());
 
         // Remove self
-        for (vector<int>::iterator iter = peers.begin(); iter != peers.end(); iter++) {
-            if (*iter == i) {
+        for (vector<int>::iterator iter = peers.begin(); iter != peers.end(); iter++)
+        {
+            if (*iter == i)
+            {
                 peers.erase(iter);
                 break;
             }
@@ -212,6 +235,80 @@ int Board::getMostConstrainedCellIndex()
     return idx;
 }
 
+vector<char> Board::getValueOrder(const int cell, const vector<int>& peers)
+{
+//    assert(cells[cell]->domain.count() > 1);
+//    vector<char> valueList = cells[cell]->getDomainList();
+//
+//    int rv = uint_dist100(rng);
+//    if (rv%10 == 5)
+//    {
+//        cout << "Random permutation over values" << endl;
+//        random_shuffle(valueList.begin(), valueList.end());
+//        for (int i = 0; i < valueList.size(); i++)
+//        {
+//            cout << (int)valueList[i] << " ";
+//        }
+//        cout << endl;
+//    }
+//
+//
+//    return valueList;
+
+    vector<char> order;
+    int valueCount[9] = {0};
+    for (int i = 0; i < 9; i++)
+    {
+        if (cells[cell]->domain.test(i))
+        {
+            valueCount[i]++;
+            for (auto &p : peers)
+            {
+                if (cells[p]->domain.test(i))
+                {
+                    valueCount[i]++;
+                }
+            }
+        }
+    }
+
+    int max = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        if (valueCount[i] > max)
+        {
+            max = valueCount[i];
+        }
+
+    }
+
+    // Order high occurance --> low occurance
+//    while (max > 0)
+//    {
+//        for (int i = 0; i < 9; i++)
+//        {
+//            if (valueCount[i] == max)
+//            {
+//                order.push_back(i);
+//            }
+//        }
+//        max--;
+//    }
+
+    // Order low occurance --> high occurance
+    for (int j = 1; j <= max; j++)
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            if (valueCount[i] == j)
+            {
+                order.push_back(i);
+            }
+        }
+    }
+    return order;
+}
+
 bool Board::eliminateTwins(const vector<int>& cg, const int idx1, const int idx2)
 {
     vector<char> twinVal;
@@ -254,7 +351,8 @@ bool Board::eliminateTwins(const vector<int>& cg, const int idx1, const int idx2
 bool Board::eliminateCell(const int idx)
 {
     // Only eliminate cells that are assigned a value
-    if (cells[idx]->isAssigned()) {
+    if (cells[idx]->isAssigned())
+    {
         for (auto &p : cellPeers[idx])
         {
             if (cells[p]->domain.test(cells[idx]->value))
@@ -412,17 +510,14 @@ bool Board::solve()
         return false;
     }
 
-    //for (auto &val : cells[mccIdx]->domain)
-    for (int i = 0; i < 9; i++)
+    // Get an ordered value list
+    vector<char> order = getValueOrder(mccIdx, cellPeers[mccIdx]);
+    for (auto &val : order)
     {
-        if (!cells[mccIdx]->domain.test(i))
-        {
-            continue;
-        }
+        assert(cells[mccIdx]->domain.test(val));
 
         Board *newBoard = new Board(*this);
-        newBoard->cells[mccIdx]->assign(i);
-        //cout << "Assign cell: " << newBoard->cells[mccIdx]->name << " to value: " << i << endl;
+        newBoard->cells[mccIdx]->assign(val);
         if (newBoard->solve() == true)
         {
             this->copyResultFrom(*newBoard);
@@ -432,6 +527,24 @@ bool Board::solve()
 
         delete newBoard;
     }
+//    for (int i = 0; i < 9; i++)
+//    {
+//        if (!cells[mccIdx]->domain.test(i))
+//        {
+//            continue;
+//        }
+//
+//        Board *newBoard = new Board(*this);
+//        newBoard->cells[mccIdx]->assign(i);
+//        if (newBoard->solve() == true)
+//        {
+//            this->copyResultFrom(*newBoard);
+//            delete newBoard;
+//            return true;
+//        }
+//
+//        delete newBoard;
+//    }
 
     return false;
 }
