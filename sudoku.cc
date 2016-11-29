@@ -193,7 +193,8 @@ bool Board::isSolved()
 int Board::getMostConstrainedCellIndex()
 {
     int idx = -1;
-    int domainSize = 9;
+    // Starts with 10 in case the board is completely empty
+    int domainSize = 10;
     for (int i = 0; i < cells.size(); i++)
     {
         if (cells[i]->isAssigned())

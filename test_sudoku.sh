@@ -14,8 +14,13 @@ fi
 
 if [ "$1" == "easy" ]; then
     infile="./puzzles_easy.txt"
-else
+elif [ "$1" == "hard" ]; then
     infile="./puzzles_hard.txt"
+elif [ "$1" == "extreme" ]; then
+    infile="./puzzles_extreme.txt"
+else
+    echo "Error parameter"
+    exit 1
 fi
 
 if [ $2 -le 0 ]; then
