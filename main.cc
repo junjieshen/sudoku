@@ -21,6 +21,7 @@ int main(int argc, char* argv[])
     Board board(boardString);
     cout << "Original board: " << endl;
     board.printBoard();
+    //board.printDomains();
 
     if (board.solve() != true)
     {

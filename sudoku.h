@@ -1,16 +1,20 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <bitset>
 #include <algorithm>
 #include <cassert>
 
+#define EMPTY -1
 using namespace std;
 
 class Cell
 {
 public:
     string name;
-    vector<char> domain;
+    char value;
+    //vector<char> domain;
+    bitset<9> domain;
 
     Cell(int pos, char digit);
     Cell(const Cell& cell);
@@ -20,10 +24,11 @@ public:
 
     virtual void copyFrom(const Cell& cell);
     virtual void findAndDelete(const char val);
-    virtual void assign(const char c);
+    virtual void assign(const char val);
     virtual bool isAssigned()
     {
-        return (domain.size() == 1);
+        //return (domain.size() == 1);
+        return (value != EMPTY);
     };
     virtual char getLeastConstrainedValue();
 };
@@ -59,7 +64,8 @@ public:
     {
         for (auto &c : cells)
         {
-            cout << c->domain[0];
+            char val = '1' + c->value;
+            cout << val; //c->domain[0];
         }
         cout << endl;
     }
@@ -78,7 +84,8 @@ public:
                     cout << "| ";
                 }
                 if (cells[i*9 + j]->isAssigned()) {
-                    cout << cells[i*9 + j]->domain[0] << ' ';
+                    char val = '1' + cells[i*9 + j]->value;
+                    cout << val << ' ';
                 } else {
                     cout << ". ";
                 }
@@ -113,12 +120,15 @@ public:
                     cout << "|";
                 }
                 cout << " ";
-                vector<char> dm = cells[i*9 +j]->domain;
-                for (auto &c : dm) {
-                    cout << c;
+                for (int m = 0; m < 9; m++)
+                {
+                    if (cells[i*9 + j]->domain.test(m))
+                    {
+                        cout << m+1;
+                    }
                 }
 
-                for (int s = dm.size(); s <= 9; s++) {
+                for (int s = cells[i*9 + j]->domain.count(); s <= 9; s++) {
                     cout << " ";
                 }
             }

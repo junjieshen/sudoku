@@ -10,14 +10,17 @@ Cell::Cell(int pos, char digit)
     name = string(1, 'A' + pos/9) + to_string(1 + pos%9);
     if (digit == '.' || digit == '0')
     {
-        for (char c = '1'; c <= '9'; c++)
+        value = EMPTY;
+        for (int i = 0; i < 9; i++)
         {
-            domain.push_back(c);
+            domain.set(i);
         }
     }
     else
     {
-        domain.push_back(digit);
+        value = digit - '1';
+        domain.reset();
+        domain.set(value);
     }
 }
 
@@ -29,33 +32,44 @@ Cell::Cell(const Cell& cell)
 void Cell::copyFrom(const Cell& cell)
 {
     this->name = cell.name;
+    this->value = cell.value;
     this->domain = cell.domain;
 }
 
 void Cell::findAndDelete(const char val)
 {
-    vector<char>::iterator it = find(domain.begin(), domain.end(), val);
-    if (it != domain.end())
+    domain.reset(val);
+    if (domain.count() == 1)
     {
-        domain.erase(it);
-        if (domain.size() == 1)
+        for (int i = 0; i < 9; i++)
         {
-            assign(domain[0]);
+            if (domain.test(i))
+            {
+                assign(i);
+                break;
+            }
         }
     }
-
 }
 
-void Cell::assign(const char c)
+void Cell::assign(const char val)
 {
-    domain.clear();
-    domain.push_back(c);
+    value = val;
+    domain.reset();
+    domain.set(val);
 }
 
 char Cell::getLeastConstrainedValue()
 {
-    assert(domain.size() > 1);
-    return domain[0];
+    assert(domain.count() > 1);
+    for (int i = 0; i < 9; i++)
+    {
+        if (domain.test(i))
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 Board::Board(const string& boardString)
@@ -170,7 +184,7 @@ bool Board::isSolved()
 {
     for (auto &c : cells)
     {
-        if (c->domain.size() != 1)
+        if (c->domain.count() != 1)
             return false;
     }
     return true;
@@ -187,10 +201,10 @@ int Board::getMostConstrainedCellIndex()
             continue;
         }
 
-        if (cells[i]->domain.size() < domainSize)
+        if (cells[i]->domain.count() < domainSize)
         {
             idx = i;
-            domainSize = cells[i]->domain.size();
+            domainSize = cells[i]->domain.count();
         }
     }
 
@@ -199,6 +213,17 @@ int Board::getMostConstrainedCellIndex()
 
 bool Board::eliminateTwins(const vector<int>& cg, const int idx1, const int idx2)
 {
+    vector<char> twinVal;
+    for (int i = 0; i < 9; i++)
+    {
+        if (cells[idx1]->domain.test(i))
+        {
+            twinVal.push_back(i);
+        }
+    }
+
+    assert(twinVal.size() == 2);
+
     for (auto &c : cg)
     {
         if (c == idx1 || c == idx2)
@@ -206,8 +231,8 @@ bool Board::eliminateTwins(const vector<int>& cg, const int idx1, const int idx2
             continue;
         }
 
-        cells[c]->findAndDelete(cells[idx1]->domain[1]);
-        cells[c]->findAndDelete(cells[idx1]->domain[0]);
+        cells[c]->findAndDelete(twinVal[1]);
+        cells[c]->findAndDelete(twinVal[0]);
         if (cells[c]->isAssigned())
         {
             if (!eliminateCell(c))
@@ -216,7 +241,7 @@ bool Board::eliminateTwins(const vector<int>& cg, const int idx1, const int idx2
             }
         }
 
-        if (cells[c]->domain.size() == 0)
+        if (cells[c]->domain.count() == 0)
         {
             return false;
         }
@@ -231,17 +256,23 @@ bool Board::eliminateCell(const int idx)
     if (cells[idx]->isAssigned()) {
         for (auto &p : cellPeers[idx])
         {
-            vector<char>::iterator it = find(cells[p]->domain.begin(), cells[p]->domain.end(),
-                    cells[idx]->domain[0]);
-            if (it != cells[p]->domain.end())
+            if (cells[p]->domain.test(cells[idx]->value))
             {
-                cells[p]->domain.erase(it);
+                cells[p]->domain.reset(cells[idx]->value);
 
                 // If peer have only one element,
                 // assign value and eliminate peer's peers.
-                if (cells[p]->domain.size() == 1)
+                if (cells[p]->domain.count() == 1)
                 {
-                    cells[p]->assign(cells[p]->domain[0]);
+                    for (int i = 0; i < 9; i++)
+                    {
+                        if (cells[p]->domain.test(i))
+                        {
+                            cells[p]->assign(i);
+                            break;
+                        }
+                    }
+                    //cells[p]->assign(cells[p]-);
                     if (!eliminateCell(p))
                     {
                         return false;
@@ -249,7 +280,7 @@ bool Board::eliminateCell(const int idx)
                 }
             }
 
-            if (cells[p]->domain.size() == 0)
+            if (cells[p]->domain.count() == 0)
             {
                 return false;
             }
@@ -271,15 +302,23 @@ bool Board::eliminateConflictGroup(const vector<int>& cg)
         }
 
         // If value is not in any peer's domain, it must be the value of the current cell
-        for (auto &val : cells[c]->domain) {
+        for (int i = 0; i < 9; i++)
+        {
+            if (!cells[c]->domain.test(i))
+            {
+                continue;
+            }
+
             bool assigned = false;
-            for (auto &p : cg) {
+            for (auto &p : cg)
+            {
                 // Skip self
-                if (p == c) {
+                if (p == c)
+                {
                     continue;
                 }
 
-                if (find(cells[p]->domain.begin(), cells[p]->domain.end(), val) != cells[p]->domain.end())
+                if (cells[p]->domain.test(i))
                 {
                     assigned = true;
                     break;
@@ -287,7 +326,7 @@ bool Board::eliminateConflictGroup(const vector<int>& cg)
             }
             if (!assigned)
             {
-                cells[c]->assign(val);
+                cells[c]->assign(i);
                 break;
             }
         }
@@ -295,18 +334,19 @@ bool Board::eliminateConflictGroup(const vector<int>& cg)
         // If cell got assigned, prune again
         if (cells[c]->isAssigned())
         {
-            eliminateCell(c);
+            if (!eliminateCell(c))
+            {
+                return false;
+            }
         }
 
         // Naked Twins strategy
-        if (cells[c]->domain.size() == 2 && find(twinExplored.begin(), twinExplored.end(), c) == twinExplored.end())
+        if (cells[c]->domain.count() == 2 && find(twinExplored.begin(), twinExplored.end(), c) == twinExplored.end())
         {
             for (auto &twin : cg)
             {
-                // Since domain is sorted, we can simply check one by one
-                if (twin != c && cells[twin]->domain.size() == 2 &&
-                        cells[c]->domain[0] == cells[twin]->domain[0] &&
-                        cells[c]->domain[1] == cells[twin]->domain[1])
+                if (twin != c && cells[twin]->domain.count() == 2 &&
+                        cells[c]->domain == cells[twin]->domain)
                 {
                     // prune these two value from other domains in the cg
                     if (!eliminateTwins(cg, c, twin))
@@ -371,11 +411,17 @@ bool Board::solve()
         return false;
     }
 
-    for (auto &val : cells[mccIdx]->domain)
+    //for (auto &val : cells[mccIdx]->domain)
+    for (int i = 0; i < 9; i++)
     {
+        if (!cells[mccIdx]->domain.test(i))
+        {
+            continue;
+        }
+
         Board *newBoard = new Board(*this);
-        newBoard->cells[mccIdx]->assign(val);
-        //cout << "Assign cell: " << newBoard->cells[mccIdx]->name << " to value: " << val << endl;
+        newBoard->cells[mccIdx]->assign(i);
+        //cout << "Assign cell: " << newBoard->cells[mccIdx]->name << " to value: " << i << endl;
         if (newBoard->solve() == true)
         {
             this->copyResultFrom(*newBoard);
