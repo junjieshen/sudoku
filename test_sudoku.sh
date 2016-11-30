@@ -35,9 +35,9 @@ if [ "$line" == "" ]; then
     exit 1
 fi
 
-START=$(date +%s.%N)
+#START=$(date +%s.%N)
 
-./sudoku $line
+time ./sudoku $line
 
-DIFF=$(echo "$(date +%s.%N) - $START" | bc);
-printf "Run time: %.6f seconds\n" ${DIFF}
+#DIFF=$(echo "$(date +%s.%N) - $START" | bc);
+#printf "Run time: %.6f seconds\n" ${DIFF}

@@ -14,7 +14,7 @@ vector<vector<int> > Board::cellPeers;
 
 Cell::Cell(int pos, char digit)
 {
-    name = string(1, 'A' + pos/9) + to_string(1 + pos%9);
+    name = string(1, 'A' + pos/9) + string(1, 1 + pos%9);
     if (digit == '.' || digit == '0')
     {
         value = EMPTY;
