@@ -7,8 +7,8 @@ Input is a sequence of 81 interers ranging [0,9], encoding the initial board pos
 This program has been tested on a Ubuntu 16.04.1 64-bit machine. The detailed hardware and compiler configurations are:
 
 ```sh
-CPU:      Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz
-Memory:   8G
+CPU:      Intel(R) Core(TM) i7-4790K CPU @ 4.00GHz
+Memory:   16GB
 Compiler: g++-5.4.0
 ```
 
