@@ -510,32 +510,14 @@ bool Board::solve()
         return false;
     }
 
-    // Get an ordered value list
-    vector<char> order = getValueOrder(mccIdx, cellPeers[mccIdx]);
-    for (auto &val : order)
-    {
-        assert(cells[mccIdx]->domain.test(val));
-
-        Board *newBoard = new Board(*this);
-        newBoard->cells[mccIdx]->assign(val);
-        if (newBoard->solve() == true)
-        {
-            this->copyResultFrom(*newBoard);
-            delete newBoard;
-            return true;
-        }
-
-        delete newBoard;
-    }
-//    for (int i = 0; i < 9; i++)
+//    // Get an ordered value list
+//    vector<char> order = getValueOrder(mccIdx, cellPeers[mccIdx]);
+//    for (auto &val : order)
 //    {
-//        if (!cells[mccIdx]->domain.test(i))
-//        {
-//            continue;
-//        }
+//        assert(cells[mccIdx]->domain.test(val));
 //
 //        Board *newBoard = new Board(*this);
-//        newBoard->cells[mccIdx]->assign(i);
+//        newBoard->cells[mccIdx]->assign(val);
 //        if (newBoard->solve() == true)
 //        {
 //            this->copyResultFrom(*newBoard);
@@ -545,6 +527,24 @@ bool Board::solve()
 //
 //        delete newBoard;
 //    }
+    for (int i = 0; i < 9; i++)
+    {
+        if (!cells[mccIdx]->domain.test(i))
+        {
+            continue;
+        }
+
+        Board *newBoard = new Board(*this);
+        newBoard->cells[mccIdx]->assign(i);
+        if (newBoard->solve() == true)
+        {
+            this->copyResultFrom(*newBoard);
+            delete newBoard;
+            return true;
+        }
+
+        delete newBoard;
+    }
 
     return false;
 }

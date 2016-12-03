@@ -11,13 +11,8 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-if [ "$1" == "easy" ]; then
-    infile="./puzzles_easy.txt"
-elif [ "$1" == "hard" ]; then
-    infile="./puzzles_hard.txt"
-elif [ "$1" == "extreme" ]; then
-    infile="./puzzles_extreme.txt"
-else
+infile="./puzzles_"$1".txt"
+if [ ! -e $infile ]; then
     echo "Error parameter"
     exit 1
 fi
