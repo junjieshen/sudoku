@@ -4,17 +4,12 @@ using namespace std;
 
 vector<vector<int> > Board::conflictGroups;
 vector<vector<int> > Board::cellPeers;
-
-//typedef std::mt19937 MyRNG;
-//uint32_t seed_val;
-//
-//MyRNG rng;
-//
-//std::uniform_int_distribution<uint32_t> uint_dist100(0,100);
+int Board::nodeGenCount = 0;
+int Board::backtrackCount = 0;
 
 Cell::Cell(int pos, char digit)
 {
-    name = string(1, 'A' + pos/9) + string(1, 1 + pos%9);
+    //name = string(1, 'A' + pos/9) + string(1, 1 + pos%9);
     if (digit == '.' || digit == '0')
     {
         value = EMPTY;
@@ -38,7 +33,7 @@ Cell::Cell(const Cell& cell)
 
 void Cell::copyFrom(const Cell& cell)
 {
-    this->name = cell.name;
+    //this->name = cell.name;
     this->value = cell.value;
     this->domain = cell.domain;
 }
@@ -59,15 +54,18 @@ vector<char> Cell::getDomainList()
 
 void Cell::findAndDelete(const char val)
 {
-    domain.reset(val);
-    if (domain.count() == 1)
+    if (domain.test(val))
     {
-        for (int i = 0; i < 9; i++)
+        domain.reset(val);
+        if (domain.count() == 1)
         {
-            if (domain.test(i))
+            for (int i = 0; i < 9; i++)
             {
-                assign(i);
-                break;
+                if (domain.test(i))
+                {
+                    assign(i);
+                    break;
+                }
             }
         }
     }
@@ -82,11 +80,6 @@ void Cell::assign(const char val)
 
 Board::Board(const string& boardString)
 {
-    assert(boardString.size() == 81);
-
-    // Initialize random function with seed
-//    rng.seed(seed_val);
-
     initializeCells(boardString);
     initializeConflictGroups();
     initializeCellPeers();
@@ -119,13 +112,13 @@ void Board::initializeCells(const string& boardString)
 
 void Board::initializeConflictGroups()
 {
+    vector<int> cg(9, -1);
     // Rows
     for (int row = 0; row < 9; row++)
     {
-        vector<int> cg;
         for (int col = 0; col < 9; col++)
         {
-            cg.push_back(row*9 + col);
+            cg[col] = (row*9 + col);
         }
         conflictGroups.push_back(cg);
     }
@@ -133,10 +126,9 @@ void Board::initializeConflictGroups()
     // Columns
     for (int col = 0; col < 9; col++)
     {
-        vector<int> cg;
         for (int row = 0; row < 9; row++)
         {
-            cg.push_back(row*9 + col);
+            cg[row] = (row*9 + col);
         }
         conflictGroups.push_back(cg);
     }
@@ -146,12 +138,11 @@ void Board::initializeConflictGroups()
     {
         for (int col = 0; col < 9; col += 3)
         {
-            vector<int> cg;
             for (int i = 0; i < 3; i++)
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    cg.push_back((row+i)*9 + (col+j));
+                    cg[i*3 + j] = ((row+i)*9 + (col+j));
                 }
             }
             conflictGroups.push_back(cg);
@@ -189,7 +180,6 @@ void Board::initializeCellPeers()
             }
         }
 
-        assert(peers.size() == 20);
         cellPeers.push_back(peers);
     }
 }
@@ -230,6 +220,9 @@ int Board::getMostConstrainedCellIndex()
             idx = i;
             domainSize = cells[i]->domain.count();
         }
+
+//        idx = i;
+//        break;
     }
 
     return idx;
@@ -237,24 +230,6 @@ int Board::getMostConstrainedCellIndex()
 
 vector<char> Board::getValueOrder(const int cell, const vector<int>& peers)
 {
-//    assert(cells[cell]->domain.count() > 1);
-//    vector<char> valueList = cells[cell]->getDomainList();
-//
-//    int rv = uint_dist100(rng);
-//    if (rv%10 == 5)
-//    {
-//        cout << "Random permutation over values" << endl;
-//        random_shuffle(valueList.begin(), valueList.end());
-//        for (int i = 0; i < valueList.size(); i++)
-//        {
-//            cout << (int)valueList[i] << " ";
-//        }
-//        cout << endl;
-//    }
-//
-//
-//    return valueList;
-
     vector<char> order;
     int valueCount[9] = {0};
     for (int i = 0; i < 9; i++)
@@ -282,19 +257,6 @@ vector<char> Board::getValueOrder(const int cell, const vector<int>& peers)
 
     }
 
-    // Order high occurance --> low occurance
-//    while (max > 0)
-//    {
-//        for (int i = 0; i < 9; i++)
-//        {
-//            if (valueCount[i] == max)
-//            {
-//                order.push_back(i);
-//            }
-//        }
-//        max--;
-//    }
-
     // Order low occurance --> high occurance
     for (int j = 1; j <= max; j++)
     {
@@ -319,8 +281,6 @@ bool Board::eliminateTwins(const vector<int>& cg, const int idx1, const int idx2
             twinVal.push_back(i);
         }
     }
-
-    assert(twinVal.size() == 2);
 
     for (auto &c : cg)
     {
@@ -469,7 +429,6 @@ bool Board::eliminateConflictGroup(const vector<int>& cg)
 
 bool Board::constraintPropagation()
 {
-    //cout << "Pruning cell domains..." << endl;
     for (int i = 0; i < cells.size(); i++)
     {
         if (eliminateCell(i) != true)
@@ -478,7 +437,6 @@ bool Board::constraintPropagation()
         }
     }
 
-    //cout << "Enforcing constraints within conflict groups..." << endl;
     for (int i = 0; i < conflictGroups.size(); i++)
     {
         if (eliminateConflictGroup(conflictGroups[i]) != true)
@@ -486,8 +444,6 @@ bool Board::constraintPropagation()
             return false;
         }
     }
-
-    //printDomains();
 
     return true;
 }
@@ -510,12 +466,11 @@ bool Board::solve()
         return false;
     }
 
-//    // Get an ordered value list
+    // Get an ordered value list
 //    vector<char> order = getValueOrder(mccIdx, cellPeers[mccIdx]);
 //    for (auto &val : order)
 //    {
-//        assert(cells[mccIdx]->domain.test(val));
-//
+//        nodeGenCount++;
 //        Board *newBoard = new Board(*this);
 //        newBoard->cells[mccIdx]->assign(val);
 //        if (newBoard->solve() == true)
@@ -525,6 +480,7 @@ bool Board::solve()
 //            return true;
 //        }
 //
+//        backtrackCount++;
 //        delete newBoard;
 //    }
     for (int i = 0; i < 9; i++)
@@ -534,6 +490,7 @@ bool Board::solve()
             continue;
         }
 
+        nodeGenCount++;
         Board *newBoard = new Board(*this);
         newBoard->cells[mccIdx]->assign(i);
         if (newBoard->solve() == true)
@@ -543,6 +500,7 @@ bool Board::solve()
             return true;
         }
 
+        backtrackCount++;
         delete newBoard;
     }
 

@@ -12,7 +12,7 @@ using namespace std;
 class Cell
 {
 public:
-    string name;
+    //string name;
 
     char value;
 
@@ -51,6 +51,10 @@ private:
     // Indices of peers for each cell
     static vector<vector<int> > cellPeers;
 
+    static int nodeGenCount;
+
+    static int backtrackCount;
+
 public:
     Board(const string& boardString);
 
@@ -58,11 +62,11 @@ public:
 
     ~Board();
 
-    virtual void initializeCells(const string& boardString);
+    virtual inline void initializeCells(const string& boardString);
 
-    virtual void initializeConflictGroups();
+    virtual inline void initializeConflictGroups();
 
-    virtual void initializeCellPeers();
+    virtual inline void initializeCellPeers();
 
     virtual void copyResultFrom(const Board& board);
 
@@ -187,5 +191,11 @@ public:
         }
         return true;
     };
+
+    virtual void printStats()
+    {
+        cout << "Nodes generated: " << nodeGenCount << endl;
+        cout << "Backtrack count: " << backtrackCount << endl;
+    }
 };
 

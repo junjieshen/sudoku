@@ -23,9 +23,10 @@ do
     START=$(date +%s.%N)
 
     ./sudoku $line > /dev/null
-
+    
     DIFF=$(echo "$(date +%s.%N) - $START" | bc);
-    printf "Board #%d, run time: %.6f seconds\n" $i ${DIFF}
+    echo ${DIFF}
+
     ((i=i+1))
 done < $infile
 

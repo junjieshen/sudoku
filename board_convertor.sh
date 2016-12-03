@@ -29,3 +29,5 @@ do
         oneline=""
     fi
 done < $1
+        
+[ ! -z "$oneline" ] && echo $oneline >> $outfile

@@ -8,3 +8,4 @@ sudoku
 *.app
 
 *timing
+benchmark*
