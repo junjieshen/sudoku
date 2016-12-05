@@ -4,7 +4,7 @@ using namespace std;
 
 vector<vector<int> > Board::conflictGroups;
 vector<vector<int> > Board::cellPeers;
-int Board::nodeGenCount = 0;
+int Board::nodeGenCount = 1;
 int Board::backtrackCount = 0;
 
 Cell::Cell(int pos, char digit)
